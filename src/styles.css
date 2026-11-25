@@ -1,0 +1,746 @@
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--oc-bg, #ffffff);
+  color: var(--oc-fg, #1f2328);
+  font-family: var(--oc-font, system-ui, sans-serif);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+html[data-oc-surface='status'] body {
+  background: transparent;
+}
+
+#root {
+  min-height: 1px;
+}
+
+.dh {
+  box-sizing: border-box;
+  color: var(--oc-fg);
+}
+
+.dh *,
+.dh *::before,
+.dh *::after {
+  box-sizing: border-box;
+}
+
+.dh-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--oc-muted, #8b949e);
+  flex: none;
+}
+
+.dh-state.is-off .dh-dot,
+.dh-pill.is-off .dh-dot {
+  background: var(--oc-success, #2da44e);
+}
+
+.dh-state.is-peak .dh-dot,
+.dh-pill.is-peak .dh-dot {
+  background: var(--oc-warning, #bf8700);
+}
+
+/* ----- compact Work Status section ----- */
+
+.dh-status {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px 7px;
+  border-bottom: 1px solid var(--oc-border, rgba(127, 127, 127, 0.25));
+  font-size: 13px;
+  line-height: 1.3;
+  width: 100%;
+  overflow: hidden;
+}
+
+.dh-status-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 18px;
+}
+
+.dh-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--oc-fg);
+  min-width: 0;
+}
+
+.dh-state.is-off {
+  color: var(--oc-success-text, var(--oc-success, #2da44e));
+}
+
+.dh-state.is-peak {
+  color: var(--oc-warning-text, var(--oc-warning, #bf8700));
+}
+
+.dh-mult {
+  color: var(--oc-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.dh-status-next {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 17px;
+}
+
+.dh-next-label {
+  color: var(--oc-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.dh-countdown {
+  font-family: var(--oc-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--oc-fg);
+  white-space: nowrap;
+}
+
+.dh-status .dh-countdown {
+  font-weight: 600;
+}
+
+.dh-ribbon {
+  padding: 3px 0 1px;
+}
+
+.dh-ribbon-track {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--oc-muted-surface, rgba(127, 127, 127, 0.15));
+  background: color-mix(in srgb, var(--oc-border, rgba(127, 127, 127, 0.35)) 55%, var(--oc-bg, #ffffff));
+  border: 1px solid var(--oc-border, rgba(127, 127, 127, 0.35));
+}
+
+.dh-ribbon-peaks {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.dh-ribbon-block {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--oc-warning, #bf8700);
+  background: color-mix(in srgb, var(--oc-warning, #bf8700) 62%, var(--oc-warning-text, #8a6d1f) 38%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--oc-warning-text, #8a6d1f) 45%, transparent);
+  border-radius: 2px;
+}
+
+.dh-ribbon-now {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--oc-fg);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.dh-dayline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 14px;
+  color: var(--oc-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.dh-dayline-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dh-warn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border: 1px solid var(--oc-warning, #bf8700);
+  border-radius: 50%;
+  color: var(--oc-warning-text, #bf8700);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+
+/* The explicit display above outranks the UA [hidden] rule; keep the
+   warning hidden until the current year's calendar is actually missing. */
+.dh-warn[hidden] {
+  display: none;
+}
+
+/* ----- full panel ----- */
+
+.dh-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+  font-size: 13px;
+}
+
+.dh-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dh-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.dh-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+}
+
+.dh-pill .dh-dot {
+  width: 10px;
+  height: 10px;
+}
+
+.dh-pill.is-off {
+  color: var(--oc-success-text, var(--oc-success, #2da44e));
+}
+
+.dh-pill.is-peak {
+  color: var(--oc-warning-text, var(--oc-warning, #bf8700));
+}
+
+.dh-pill-text {
+  white-space: nowrap;
+}
+
+.dh-header .dh-mult {
+  font-size: 12px;
+}
+
+.dh-next-label {
+  color: var(--oc-muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.dh-panel .dh-countdown {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.dh-transition {
+  color: var(--oc-muted);
+  font-size: 12px;
+}
+
+.dh-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dh-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--oc-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dh-timeline-date {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.dh-timeline {
+  position: relative;
+  padding: 4px 0 18px;
+}
+
+.dh-timeline-track {
+  position: relative;
+  height: 16px;
+  border: 1px solid var(--oc-border, rgba(127, 127, 127, 0.3));
+  border-radius: 4px;
+  background: var(--oc-muted-surface, rgba(127, 127, 127, 0.15));
+  background: color-mix(in srgb, var(--oc-border, rgba(127, 127, 127, 0.35)) 55%, var(--oc-bg, #ffffff));
+}
+
+.dh-timeline-peaks {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.dh-timeline-block {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--oc-warning, #bf8700);
+  background: color-mix(in srgb, var(--oc-warning, #bf8700) 62%, var(--oc-warning-text, #8a6d1f) 38%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--oc-warning-text, #8a6d1f) 45%, transparent);
+}
+
+.dh-timeline-now {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--oc-fg);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.dh-ticks {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 14px;
+  color: var(--oc-muted);
+  font-family: var(--oc-mono, ui-monospace, monospace);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dh-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.dh-tick.is-first {
+  transform: none;
+}
+
+.dh-tick.is-last {
+  transform: translateX(-100%);
+}
+
+.dh-days {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+.dh-day-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px;
+  border-radius: var(--oc-radius, 6px);
+  min-height: 28px;
+  min-width: 0;
+}
+
+.dh-day-row.is-today {
+  background: var(--oc-muted-surface, rgba(127, 127, 127, 0.12));
+  background: color-mix(in srgb, var(--oc-primary, #0969da) 9%, var(--oc-bg, #ffffff));
+  box-shadow: inset 2px 0 0 var(--oc-primary, #0969da);
+}
+
+.dh-day-label {
+  flex: none;
+  width: 56px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--oc-fg);
+}
+
+.dh-day-row.is-off .dh-day-label {
+  color: var(--oc-muted);
+}
+
+.dh-day-windows {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dh-window {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 1px solid var(--oc-border, rgba(127, 127, 127, 0.3));
+  border-radius: 5px;
+  background: var(--oc-elevated, transparent);
+  color: var(--oc-warning-text, var(--oc-warning, #bf8700));
+  font-family: var(--oc-mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dh-off {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 5px;
+  border: 1px dashed var(--oc-border, rgba(127, 127, 127, 0.3));
+  border-radius: 5px;
+  color: var(--oc-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.dh-dot-off {
+  width: 6px;
+  height: 6px;
+  background: var(--oc-success, #2da44e);
+}
+
+.dh-prices {
+  gap: 10px;
+}
+
+.dh-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.dh-table thead th:first-child {
+  width: 48%;
+}
+
+.dh-table thead th:nth-child(2),
+.dh-table thead th:nth-child(3) {
+  width: 26%;
+}
+
+.dh-table th,
+.dh-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--oc-border, rgba(127, 127, 127, 0.25));
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dh-table thead th {
+  padding-top: 0;
+  padding-bottom: 4px;
+  color: var(--oc-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dh-table th:first-child,
+.dh-table td:first-child {
+  text-align: left;
+}
+
+.dh-table thead th:first-child {
+  letter-spacing: 0.08em;
+}
+
+.dh-table .dh-model-row th {
+  padding: 10px 8px 3px;
+  border-bottom: 0;
+  color: var(--oc-fg);
+  font-family: var(--oc-mono, ui-monospace, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: none;
+}
+
+.dh-table .dh-price-peak,
+.dh-price-card-peak .dh-price-card-head {
+  color: var(--oc-warning-text, var(--oc-warning, #bf8700));
+}
+
+.dh-table .dh-price-off,
+.dh-price-card-off .dh-price-card-head {
+  color: var(--oc-success-text, var(--oc-success, #2da44e));
+}
+
+.dh-price-table-wrap {
+  position: relative;
+  display: block;
+}
+
+.dh-price-table-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 48%;
+  width: 1px;
+  background: var(--oc-border, rgba(127, 127, 127, 0.25));
+  pointer-events: none;
+}
+
+.dh-cards-wrap {
+  display: none;
+}
+
+.dh-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dh-price-card {
+  padding: 10px;
+  border: 1px solid var(--oc-border, rgba(127, 127, 127, 0.3));
+  border-radius: var(--oc-radius, 8px);
+  background: var(--oc-elevated, transparent);
+}
+
+.dh-price-card-head {
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dh-card-model {
+  margin-top: 8px;
+  color: var(--oc-muted);
+  font-family: var(--oc-mono, ui-monospace, monospace);
+  font-size: 10px;
+}
+
+.dh-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 1px 0;
+  font-size: 11px;
+}
+
+.dh-card-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--oc-fg);
+}
+
+.dh-price-card-peak .dh-card-value {
+  color: var(--oc-warning-text, var(--oc-warning, #bf8700));
+}
+
+.dh-price-card-off .dh-card-value {
+  color: var(--oc-success-text, var(--oc-success, #2da44e));
+}
+
+.dh-price-note {
+  color: var(--oc-muted);
+  font-size: 11px;
+}
+
+.dh-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--oc-primary-text, var(--oc-primary, #0969da));
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.dh-link:hover {
+  text-decoration-thickness: 2px;
+}
+
+.dh-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--oc-border, rgba(127, 127, 127, 0.25));
+  color: var(--oc-muted);
+  font-size: 11px;
+}
+
+.dh-source-line {
+  flex: 1 1 210px;
+  min-width: 0;
+}
+
+.dh-refresh {
+  flex: none;
+  padding: 4px 10px;
+  border: 1px solid var(--oc-border, rgba(127, 127, 127, 0.35));
+  border-radius: 6px;
+  background: var(--oc-bg, transparent);
+  color: var(--oc-fg);
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.dh-refresh:hover {
+  background: var(--oc-hover, rgba(127, 127, 127, 0.12));
+}
+
+.dh-refresh:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.dh-refresh:focus-visible,
+.dh-link:focus-visible {
+  outline: 2px solid var(--oc-focus, var(--oc-primary, #0969da));
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+.dh-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: -8px;
+}
+
+.dh-notes:empty {
+  display: none;
+}
+
+.dh-note {
+  color: var(--oc-muted);
+  font-size: 11px;
+}
+
+.dh-note.is-warn {
+  color: var(--oc-warning-text, var(--oc-warning, #bf8700));
+}
+
+@media (min-width: 560px) {
+  .dh-days {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 14px;
+  }
+}
+
+@media (max-width: 520px) {
+  .dh-panel {
+    padding: 12px;
+    gap: 16px;
+  }
+
+  .dh-price-table-wrap {
+    display: none;
+  }
+
+  .dh-cards-wrap {
+    display: block;
+  }
+
+  .dh-day-row {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding: 6px 8px;
+  }
+
+  .dh-day-label {
+    width: 100%;
+  }
+
+  .dh-pill {
+    font-size: 16px;
+  }
+
+  .dh-panel .dh-countdown {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 380px) {
+  .dh-tick-6 {
+    display: none;
+  }
+
+  .dh-pill {
+    gap: 6px;
+    font-size: 15px;
+  }
+
+  .dh-panel .dh-countdown {
+    font-size: 26px;
+  }
+
+  .dh-cards {
+    gap: 8px;
+  }
+
+  .dh-price-card {
+    padding: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dh *,
+  .dh *::before,
+  .dh *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

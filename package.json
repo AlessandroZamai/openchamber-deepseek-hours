@@ -1,0 +1,46 @@
+{
+  "name": "@azamai/deepseek-hours",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "openchamber": {
+    "apiVersion": 1,
+    "engines": {
+      "openchamber": ">=2.8.0"
+    },
+    "contributes": {
+      "panel": {
+        "id": "deepseek-hours",
+        "name": "DeepSeek API Hours",
+        "icon": "time",
+        "entry": "panel/index.html",
+        "mobile": true
+      },
+      "statusSection": {
+        "entry": "status/index.html",
+        "title": "DeepSeek API",
+        "height": 104,
+        "defaultExpanded": true
+      },
+      "origins": [
+        "https://raw.githubusercontent.com",
+        "https://cdn.jsdelivr.net",
+        "https://unpkg.com"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "TZ=America/Toronto node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "@openchamber/sdk": "2.8.0",
+    "esbuild": "^0.25.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlessandroZamai/openchamber-deepseek-hours.git"
+  },
+  "homepage": "https://github.com/AlessandroZamai/openchamber-deepseek-hours#readme"
+}
