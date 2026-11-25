@@ -8,6 +8,7 @@ import {
   formatLocalDuration,
   formatLocalTime,
   formatLocalWeekday,
+  isHttpUrl,
   isPeakAt,
   localDay,
   localDays,
@@ -114,7 +115,7 @@ async function loadCalendarData(force) {
   const year = beijingYear(now);
   try {
     const result = await loadCalendar({
-      years: [year, year + 1],
+      years: [...new Set([new Date(now).getFullYear(), year, year + 1])],
       storage: host.storage,
       fetchImpl: (url, init) => fetch(url, init),
       now,
@@ -176,6 +177,7 @@ function tick() {
 
 function scheduleStatusHeight(el) {
   requestAnimationFrame(() => {
+    if (!el.isConnected) return;
     if (view?.kind !== 'status') return;
     const height = clamp(Math.ceil(el.getBoundingClientRect().height), 24, 480);
     if (height !== statusHeight) {
@@ -240,10 +242,15 @@ function mountStatus() {
     ? new ResizeObserver(() => scheduleStatusHeight(el))
     : null;
   observer?.observe(el);
-  window.addEventListener('resize', () => scheduleStatusHeight(el));
+  const handleResize = () => scheduleStatusHeight(el);
+  window.addEventListener('resize', handleResize);
 
   return {
     kind: 'status',
+    destroy() {
+      observer?.disconnect();
+      window.removeEventListener('resize', handleResize);
+    },
     setBusy() {},
     update() {
       const now = Date.now();
@@ -258,7 +265,7 @@ function mountStatus() {
       if (refs.stateText.textContent !== stateLabel) {
         refs.stateText.textContent = stateLabel;
       }
-      refs.mult.textContent = peak ? '2× rate' : '50% off';
+      refs.mult.textContent = peak ? '2× off-peak' : '50% off';
       refs.nextLabel.textContent = peak ? 'Off-peak in' : 'Peak in';
       refs.countdown.textContent = formatCountdown(transition - now);
 
@@ -272,7 +279,13 @@ function mountStatus() {
       }
 
       refs.now.style.left = nowMarkerLeft(now, day);
-      refs.dayline.textContent = daylineText(day, now);
+      if (!calendarLoaded) {
+        refs.dayline.textContent = 'Loading holiday calendar…';
+      } else if (!currentYearUsable(calendar, now)) {
+        refs.dayline.textContent = 'Mon–Fri only · no calendar';
+      } else {
+        refs.dayline.textContent = daylineText(day, now);
+      }
       refs.warn.hidden = !(calendarLoaded && !currentYearUsable(calendar, now));
 
       scheduleStatusHeight(el);
@@ -377,7 +390,7 @@ function mountFull() {
   el.innerHTML = `
     <header class="dh-header">
       <div class="dh-header-top">
-        <span class="dh-pill"><span class="dh-dot" aria-hidden="true"></span><span class="dh-pill-text"></span></span>
+        <span class="dh-pill"><span class="dh-dot" aria-hidden="true"></span><span class="dh-pill-text" role="status" aria-live="polite"></span></span>
         <span class="dh-mult"></span>
       </div>
       <div class="dh-next-label"></div>
@@ -385,7 +398,7 @@ function mountFull() {
       <div class="dh-transition"></div>
     </header>
     <section class="dh-section">
-      <div class="dh-section-head"><span>24 hours</span><span class="dh-timeline-date"></span></div>
+      <div class="dh-section-head"><span class="dh-hours-label">24 hours</span><span class="dh-timeline-date"></span></div>
       <div class="dh-timeline" role="img">
         <div class="dh-timeline-track">
           <div class="dh-timeline-peaks"></div>
@@ -396,6 +409,7 @@ function mountFull() {
     </section>
     <section class="dh-section">
       <div class="dh-section-head"><span>Next 7 days</span></div>
+      <div class="dh-days-note">Peak weekdays follow UTC; times are local.</div>
       <div class="dh-days"></div>
     </section>
     <section class="dh-section dh-prices">
@@ -418,6 +432,7 @@ function mountFull() {
     countdown: el.querySelector('.dh-countdown'),
     transition: el.querySelector('.dh-transition'),
     timeline: el.querySelector('.dh-timeline'),
+    hoursLabel: el.querySelector('.dh-hours-label'),
     timelineDate: el.querySelector('.dh-timeline-date'),
     peaks: el.querySelector('.dh-timeline-peaks'),
     now: el.querySelector('.dh-timeline-now'),
@@ -452,7 +467,7 @@ function mountFull() {
       void loadCalendarData(true);
     } else if (action === 'source') {
       const url = target.dataset.url;
-      if (url) void host.openUrl(url);
+      if (url && isHttpUrl(url)) void host.openUrl(url);
     }
   });
 
@@ -463,6 +478,7 @@ function mountFull() {
   const paintTimeline = (day) => {
     refs.peaks.replaceChildren();
     const span = day.end - day.start;
+    refs.hoursLabel.textContent = `${Math.round(span / 3600000)} hours`;
     for (const interval of day.intervals) {
       const block = document.createElement('span');
       block.className = 'dh-timeline-block';
@@ -473,17 +489,26 @@ function mountFull() {
     }
 
     refs.ticks.replaceChildren();
-    for (const fraction of [0, 0.25, 0.5, 0.75, 1]) {
-      const at = fraction === 1 ? day.end : day.start + span * fraction;
+    const base = new Date(day.start);
+    const marks = [0, 6, 12, 18].map((hour) => ({
+      hour,
+      at: clamp(
+        new Date(base.getFullYear(), base.getMonth(), base.getDate(), hour).getTime(),
+        day.start,
+        day.end,
+      ),
+    }));
+    marks.push({ hour: null, at: day.end });
+    for (const mark of marks) {
       const tick = document.createElement('span');
       tick.className = 'dh-tick';
-      if (fraction === 0) tick.classList.add('is-first');
-      if (fraction === 1) tick.classList.add('is-last');
-      if (fraction === 0.25 || fraction === 0.75) tick.classList.add('dh-tick-6');
-      tick.style.left = `${fraction * 100}%`;
-      tick.textContent = fraction === 1
-        ? '24'
-        : String(new Date(at).getHours()).padStart(2, '0');
+      if (mark.hour === 0) tick.classList.add('is-first');
+      if (mark.hour === null) tick.classList.add('is-last');
+      if (mark.hour === 6 || mark.hour === 18) tick.classList.add('dh-tick-6');
+      tick.style.left = `${clamp(((mark.at - day.start) / span) * 100, 0, 100)}%`;
+      tick.textContent = mark.hour === null
+        ? String(Math.round(span / 3600000))
+        : String(mark.hour).padStart(2, '0');
       refs.ticks.append(tick);
     }
     refs.timelineDate.textContent = formatLocalWeekday(day.start + (day.end - day.start) / 2, context?.locale ?? 'en');
@@ -533,30 +558,44 @@ function mountFull() {
     refs.sourceLine.replaceChildren();
     const year = beijingYear(now);
     const entry = calendar.entries.find((item) => item.year === year);
-    const dataset = entry?.dataset;
-    const label = dataset === 'chinese-days'
-      ? 'Calendar: chinese-days backup'
-      : 'Calendar: official State Council schedule';
-    refs.sourceLine.append(document.createTextNode(
-      calendar.fetchedAt
-        ? `${label} · fetched ${formatCalendarDate(calendar.fetchedAt)}`
-        : label,
-    ));
+    const usable = Boolean(entry) && entry.status !== 'missing' && entry.notPublished !== true;
 
-    const sourceUrl = calendar.papers[0] ?? entry?.papers?.[0] ?? null;
-    if (sourceUrl) {
-      refs.sourceLine.append(document.createTextNode(' · '));
-      const link = document.createElement('button');
-      link.type = 'button';
-      link.className = 'dh-link';
-      link.dataset.action = 'source';
-      link.dataset.url = sourceUrl;
-      link.textContent = 'source ↗';
-      refs.sourceLine.append(link);
+    if (!calendarLoaded) {
+      refs.sourceLine.append(document.createTextNode('Calendar: loading…'));
+    } else if (!usable) {
+      refs.sourceLine.append(
+        document.createTextNode('Calendar unavailable — Mon–Fri only'),
+      );
+    } else {
+      const datasetLabel = entry.dataset === 'chinese-days'
+        ? 'Calendar: chinese-days backup'
+        : 'Calendar: official State Council schedule';
+      refs.sourceLine.append(document.createTextNode(
+        entry.fetchedAt
+          ? `${datasetLabel} · fetched ${formatCalendarDate(entry.fetchedAt)}`
+          : datasetLabel,
+      ));
+
+      const sourceUrl = entry.papers?.[0] ?? null;
+      if (sourceUrl && isHttpUrl(sourceUrl)) {
+        refs.sourceLine.append(document.createTextNode(' · '));
+        const link = document.createElement('button');
+        link.type = 'button';
+        link.className = 'dh-link';
+        link.dataset.action = 'source';
+        link.dataset.url = sourceUrl;
+        link.textContent = 'source ↗';
+        refs.sourceLine.append(link);
+      }
     }
 
     refs.notes.replaceChildren();
-    if (calendarLoaded && !currentYearUsable(calendar, now)) {
+    if (!calendarLoaded) {
+      const note = document.createElement('div');
+      note.className = 'dh-note';
+      note.textContent = 'Loading holiday calendar…';
+      refs.notes.append(note);
+    } else if (!usable) {
       const note = document.createElement('div');
       note.className = 'dh-note is-warn';
       note.textContent = 'Holiday calendar unavailable — showing Mon–Fri peak hours only';
@@ -586,7 +625,7 @@ function mountFull() {
     setBusy(busy) {
       refs.refresh.disabled = busy;
     },
-    update() {
+    update(force) {
       const now = Date.now();
       const peak = isPeakAt(now, calendar.offDays);
       const transition = nextTransition(now, calendar.offDays);
@@ -594,14 +633,18 @@ function mountFull() {
 
       refs.pill.classList.toggle('is-peak', peak);
       refs.pill.classList.toggle('is-off', !peak);
-      refs.pillText.textContent = peak ? 'PEAK' : 'OFF-PEAK';
-      refs.mult.textContent = peak ? '2× peak' : '50% of peak';
+      const pillLabel = peak ? 'PEAK' : 'OFF-PEAK';
+      if (refs.pillText.textContent !== pillLabel) {
+        refs.pillText.textContent = pillLabel;
+      }
+      refs.mult.textContent = peak ? '2× off-peak' : '50% of peak';
       refs.nextLabel.textContent = peak ? 'Off-peak prices start in' : 'Peak prices start in';
       refs.countdown.textContent = formatCountdown(transition - now);
       refs.transition.textContent = `at ${formatLocalTime(transition, context?.locale ?? 'en')} local · ${relativeDay(now, transition)}`;
 
       const locale = context?.locale ?? 'en';
-      const structural = day.dateKey !== lastDayKey
+      const structural = force === true
+        || day.dateKey !== lastDayKey
         || calendarStamp !== lastStamp
         || locale !== lastLocale;
       if (structural) {
@@ -632,6 +675,7 @@ host.onReady((next) => {
 
   const kind = next.surface === 'status' ? 'status' : 'full';
   if (!view || view.kind !== kind) {
+    view?.destroy?.();
     root.replaceChildren();
     view = kind === 'status' ? mountStatus() : mountFull();
   }

@@ -34,7 +34,7 @@ Then add the folder in **Settings → Extensions**. Folder installs run straight
 
 - Peak: Monday–Friday, 01:00–04:00 and 06:00–10:00 UTC, end-exclusive.
 - Everything else is off-peak, and off-peak prices are exactly half of peak prices.
-- Weekends are off-peak.
+- Weekends by UTC date are off-peak. The 7-day list labels rows by local date, so a UTC-Monday 01:00 window can appear on a local Sunday evening.
 - Chinese public holidays are off-peak for the entire official break. The date is determined in `Asia/Shanghai` and checked against the fetched off-day set. No holiday dates are hardcoded in the extension.
 
 Peak evaluation order is: Beijing holiday → UTC weekend → UTC peak window.
@@ -53,11 +53,11 @@ Sources are tried in this order:
 
 The third source is an independent dataset (repo [`vsme/chinese-days`](https://github.com/vsme/chinese-days)), not another mirror of holiday-cn. Its `holidays` object keys are normalized into off days; `workdays` is ignored because weekends are already off-peak. For chinese-days, the source link is the GitHub repository rather than a State Council paper.
 
-The footer names the dataset that actually served the current year: `Calendar: official State Council schedule` for holiday-cn, `Calendar: chinese-days backup` for the backup source.
+The footer names the dataset that actually served the current year: `Calendar: official State Council schedule` for holiday-cn, `Calendar: chinese-days backup` for the backup source. It only claims an official State Council calendar when the current year's data actually came from holiday-cn; otherwise it says the calendar is loading or unavailable.
 
 A source that returns a non-2xx status, invalid JSON, or fails validation is skipped. Three 404s mean the year is not published yet. Any other total failure keeps the cached copy and marks it stale.
 
-The extension refreshes the calendar on its own: every 60 seconds while the current year's calendar is unusable, and every 6 hours otherwise. This also picks up the next year's calendar once it is published. The panel's **Refresh** button bypasses the TTL immediately, fetches all sources again, and shows a toast with the outcome. The compact section only warns when the *current* Beijing year is unusable; a missing next year is a muted note in the panel instead.
+The extension refreshes the calendar on its own: every 60 seconds while the current year's calendar is unusable, and every 6 hours otherwise. A fresh “not published yet” answer is honored for 6 hours, so the 60-second retry only starts real requests once that cache expires or you press Refresh. This also picks up the next year's calendar once it is published. The panel's **Refresh** button bypasses the TTL immediately, fetches all sources again, and shows a toast with the outcome. The compact section only warns when the *current* Beijing year is unusable; a missing next year is a muted note in the panel instead.
 
 ## Prices
 

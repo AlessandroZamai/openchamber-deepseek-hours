@@ -44,6 +44,17 @@ export function beijingDateKey(ms) {
   return `${year}-${month}-${day}`;
 }
 
+/** True only for a non-empty string that parses as an http(s) URL. */
+export function isHttpUrl(value) {
+  if (typeof value !== 'string' || value.length === 0) return false;
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Parse one holiday-cn calendar document.
  * Throws on anything that does not look like the documented shape.
@@ -72,7 +83,7 @@ export function parseCalendar(json) {
     if (entry.isOffDay) offDays.add(entry.date);
   }
   const papers = Array.isArray(json.papers)
-    ? json.papers.filter((paper) => typeof paper === 'string' && paper.length > 0)
+    ? json.papers.filter((paper) => isHttpUrl(paper))
     : [];
   return { year: json.year, offDays, papers };
 }

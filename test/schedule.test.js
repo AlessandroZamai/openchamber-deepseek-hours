@@ -9,6 +9,7 @@ import {
   formatLocalDuration,
   formatLocalTime,
   formatLocalWeekday,
+  isHttpUrl,
   isPeakAt,
   localDay,
   localDays,
@@ -144,6 +145,27 @@ test('parseCalendar keeps only official off days and the paper link', () => {
   assert.deepEqual([...parsed.offDays], ['2027-02-05']);
   assert.deepEqual(parsed.papers, ['https://www.gov.cn/example']);
   assert.equal(parsed.year, 2027);
+});
+
+test('parseCalendar drops paper links that are not http(s) URLs', () => {
+  assert.equal(isHttpUrl('https://www.gov.cn/example'), true);
+  assert.equal(isHttpUrl('javascript:alert(1)'), false);
+  assert.equal(isHttpUrl('data:text/html,x'), false);
+  assert.equal(isHttpUrl(''), false);
+
+  const parsed = parseCalendar({
+    year: 2027,
+    papers: [
+      'javascript:alert(1)',
+      'data:text/html,x',
+      '',
+      'https://www.gov.cn/zhengce/content/2027-01/01/content_0001.htm',
+    ],
+    days: [{ name: 'A', date: '2027-02-05', isOffDay: true }],
+  });
+  assert.deepEqual(parsed.papers, [
+    'https://www.gov.cn/zhengce/content/2027-01/01/content_0001.htm',
+  ]);
 });
 
 test('parseCalendar rejects a wrong year and invalid day entries', () => {
